@@ -9,6 +9,7 @@ import { camelize } from '../../util/string';
 import { propTypes } from '../../util/types';
 
 import FallbackPage from './FallbackPage';
+import SectionOccasions from './SectionOccasions';
 import { ASSET_NAME } from './LandingPage.duck';
 import { fetchFeaturedListings } from '../../ducks/featuredListings.duck';
 import { getListingsById } from '../../ducks/marketplaceData.duck';
@@ -18,12 +19,43 @@ const PageBuilder = loadable(() =>
   import(/* webpackChunkName: "PageBuilder" */ '../PageBuilder/PageBuilder')
 );
 
+// Custom "Shop by occasion" section that is injected among the Console-hosted
+// sections. The sectionType is mapped to the SectionOccasions component through
+// PageBuilder's options.sectionComponents.
+const occasionsSection = {
+  sectionType: 'occasions',
+  sectionId: 'shop-by-occasion',
+};
+
+// Inject the custom occasions section right after the first Console-hosted
+// section (typically the hero). If the hosted asset has no sections yet, the
+// occasions section is rendered on its own. This keeps working even when
+// operators add, remove, or reorder sections in Console.
+const withOccasionsSection = pageData => {
+  if (!pageData) {
+    return pageData;
+  }
+  const hostedSections = pageData.sections || [];
+  const insertIndex = hostedSections.length > 0 ? 1 : 0;
+  const sections = [
+    ...hostedSections.slice(0, insertIndex),
+    occasionsSection,
+    ...hostedSections.slice(insertIndex),
+  ];
+  return { ...pageData, sections };
+};
+
 export const LandingPageComponent = props => {
   const { pageAssetsData, inProgress, error } = props;
 
   return (
     <PageBuilder
-      pageAssetsData={pageAssetsData?.[camelize(ASSET_NAME)]?.data}
+      pageAssetsData={withOccasionsSection(pageAssetsData?.[camelize(ASSET_NAME)]?.data)}
+      options={{
+        sectionComponents: {
+          occasions: { component: SectionOccasions },
+        },
+      }}
       inProgress={inProgress}
       error={error}
       fallbackPage={<FallbackPage error={error} />}

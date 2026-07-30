@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { updatedEntities, denormalisedEntities } from '../../util/data';
 import { storableError } from '../../util/errors';
+import { fetchSharedWithMeListings } from '../../util/api';
 import { createImageVariantConfig } from '../../util/sdkLoader';
 import { parse } from '../../util/urlHelpers';
 
@@ -56,6 +57,30 @@ export const queryOwnListingsThunk = createAsyncThunk(
 // Backward compatible wrapper for the thunk
 export const queryOwnListings = queryParams => (dispatch, getState, sdk) => {
   return dispatch(queryOwnListingsThunk(queryParams)).unwrap();
+};
+
+///////////////////////////////////
+// Query Shared-With-Me Listings //
+///////////////////////////////////
+
+// Listings owned by other users where the current user is a collaborator.
+// Fetched from the local API endpoint, which verifies membership with the
+// caller's own session. Returns lightweight JSON listing summaries.
+const querySharedListingsPayloadCreator = (_, { rejectWithValue }) => {
+  return fetchSharedWithMeListings()
+    .then(response => response.data || [])
+    .catch(e => {
+      return rejectWithValue(storableError(e));
+    });
+};
+
+export const querySharedListingsThunk = createAsyncThunk(
+  'app/ManageListingsPage/querySharedListings',
+  querySharedListingsPayloadCreator
+);
+// Backward compatible wrapper for the thunk
+export const querySharedListings = () => (dispatch, getState, sdk) => {
+  return dispatch(querySharedListingsThunk()).unwrap();
 };
 
 ///////////////////
@@ -167,6 +192,9 @@ const manageListingsPageSlice = createSlice({
     closingListingError: null,
     discardingDraft: null,
     discardingDraftError: null,
+    sharedListings: [],
+    querySharedListingsInProgress: false,
+    querySharedListingsError: null,
   },
   reducers: {
     clearOpenListingError: state => {
@@ -246,6 +274,23 @@ const manageListingsPageSlice = createSlice({
         state.closingListing = null;
       });
 
+    // Query shared-with-me listings
+    builder
+      .addCase(querySharedListingsThunk.pending, state => {
+        state.querySharedListingsInProgress = true;
+        state.querySharedListingsError = null;
+      })
+      .addCase(querySharedListingsThunk.fulfilled, (state, action) => {
+        state.sharedListings = action.payload;
+        state.querySharedListingsInProgress = false;
+      })
+      .addCase(querySharedListingsThunk.rejected, (state, action) => {
+        // eslint-disable-next-line no-console
+        console.error(action.payload || action.error);
+        state.querySharedListingsInProgress = false;
+        state.querySharedListingsError = action.payload;
+      });
+
     // Discard draft
     builder
       .addCase(discardDraftThunk.pending, (state, action) => {
@@ -285,6 +330,13 @@ export const loadData = (params, search, config) => (dispatch, getState, sdk) =>
     variantPrefix = 'listing-card',
   } = config.layout.listingImage;
   const aspectRatio = aspectHeight / aspectWidth;
+
+  // The shared-with-me endpoint is browser-only (local API), so it is not
+  // dispatched during SSR. Errors are stored in the slice, not thrown, so a
+  // missing Integration API configuration never breaks the page.
+  if (typeof window !== 'undefined') {
+    dispatch(querySharedListingsThunk());
+  }
 
   return Promise.all([
     dispatch(fetchCurrentUser()),

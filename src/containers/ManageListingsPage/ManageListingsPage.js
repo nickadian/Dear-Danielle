@@ -8,7 +8,11 @@ import { useConfiguration } from '../../context/configurationContext';
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
 import { pathByRouteName } from '../../util/routes';
 import { hasPermissionToPostListings, showCreateListingLinkForUser } from '../../util/userHelpers';
-import { NO_ACCESS_PAGE_POST_LISTINGS } from '../../util/urlHelpers';
+import {
+  LISTING_PAGE_PARAM_TYPE_EDIT,
+  NO_ACCESS_PAGE_POST_LISTINGS,
+  createSlug,
+} from '../../util/urlHelpers';
 import { propTypes } from '../../util/types';
 import { isErrorNoPermissionToPostListings } from '../../util/errors';
 import { isScrollingDisabled, manageDisableScrolling } from '../../ducks/ui.duck';
@@ -61,6 +65,52 @@ const Heading = props => {
       </p>
     </div>
   ) : null;
+};
+
+// Listings owned by other users that have been shared with the current user
+// as a collaborator. Each card links to the edit wizard, where saves are
+// routed through the collaborator update endpoint.
+const SharedWithMeSection = props => {
+  const { sharedListings } = props;
+
+  if (!sharedListings || sharedListings.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className={css.sharedSection}>
+      <H3 as="h2" className={css.heading}>
+        <FormattedMessage
+          id="ManageListingsPage.sharedWithMeTitle"
+          values={{ count: sharedListings.length }}
+        />
+      </H3>
+      <ul className={css.sharedListingList}>
+        {sharedListings.map(l => (
+          <li key={l.id} className={css.sharedListingItem}>
+            <NamedLink
+              className={css.sharedListingLink}
+              name="EditListingPage"
+              params={{
+                id: l.id,
+                slug: createSlug(l.title || 'listing'),
+                type: LISTING_PAGE_PARAM_TYPE_EDIT,
+                tab: 'details',
+              }}
+            >
+              {l.imageUrl ? (
+                <img className={css.sharedListingImage} src={l.imageUrl} alt={l.title} />
+              ) : (
+                <span className={css.sharedListingImagePlaceholder} />
+              )}
+              <span className={css.sharedListingTitle}>{l.title}</span>
+              <span className={css.sharedListingState}>{l.state}</span>
+            </NamedLink>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 };
 
 const PaginationLinksMaybe = props => {
@@ -129,6 +179,7 @@ export const ManageListingsPageComponent = props => {
     queryParams,
     scrollingDisabled,
     onManageDisableScrolling,
+    sharedListings,
   } = props;
 
   useEffect(() => {
@@ -261,6 +312,8 @@ export const ManageListingsPageComponent = props => {
             pagination={pagination}
             page={queryParams ? queryParams.page : 1}
           />
+
+          <SharedWithMeSection sharedListings={sharedListings} />
         </div>
       </LayoutSingleColumn>
     </Page>
@@ -281,9 +334,11 @@ const mapStateToProps = state => {
     closingListingError,
     discardingDraft,
     discardingDraftError,
+    sharedListings,
   } = state.ManageListingsPage;
   const listings = getOwnListingsById(state, currentPageResultIds);
   return {
+    sharedListings,
     currentUser,
     currentPageResultIds,
     listings,

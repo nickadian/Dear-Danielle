@@ -60,6 +60,16 @@ const InboxLink = ({ notificationCount, inboxTab }) => {
   );
 };
 
+const FavoritesLink = () => {
+  return (
+    <NamedLink id="favorites-link" className={css.topbarLink} name="FavoritesPage">
+      <span className={css.topbarLinkLabel}>
+        <FormattedMessage id="TopbarDesktop.favoritesLink" />
+      </span>
+    </NamedLink>
+  );
+};
+
 const ProfileMenu = ({ currentPage, currentUser, onLogout, showManageListingsLink, intl }) => {
   const currentPageClass = page => {
     const isAccountSettingsPage =
@@ -174,6 +184,8 @@ const TopbarDesktop = props => {
     <InboxLink notificationCount={notificationCount} inboxTab={inboxTab} />
   ) : null;
 
+  const favoritesLinkMaybe = authenticatedOnClientSide ? <FavoritesLink /> : null;
+
   const profileMenuMaybe = authenticatedOnClientSide ? (
     <ProfileMenu
       currentPage={currentPage}
@@ -234,6 +246,7 @@ const TopbarDesktop = props => {
       />
 
       {cartIconMaybe}
+      {favoritesLinkMaybe}
       {inboxLinkMaybe}
       {profileMenuMaybe}
       {signupLinkMaybe}

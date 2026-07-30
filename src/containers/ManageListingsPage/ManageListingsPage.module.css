@@ -143,3 +143,63 @@
     margin: auto 36px 0 36px;
   }
 }
+
+/* Shared with me (listing collaborators) */
+
+.sharedSection {
+  margin: 24px 24px 48px 24px;
+
+  @media (--viewportLarge) {
+    margin: 36px 36px 72px 36px;
+  }
+}
+
+.sharedListingList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sharedListingItem {
+  border-bottom: 1px solid var(--colorGrey100);
+
+  &:first-child {
+    border-top: 1px solid var(--colorGrey100);
+  }
+}
+
+.sharedListingLink {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  color: var(--colorGrey700);
+
+  &:hover {
+    text-decoration: none;
+    color: var(--marketplaceColor);
+  }
+}
+
+.sharedListingImage,
+.sharedListingImagePlaceholder {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: var(--borderRadiusMedium);
+  object-fit: cover;
+  background-color: var(--colorGrey100);
+}
+
+.sharedListingTitle {
+  composes: textSmall from global;
+  flex-grow: 1;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.sharedListingState {
+  composes: textSmall from global;
+  flex-shrink: 0;
+  color: var(--colorGrey300);
+  text-transform: capitalize;
+}

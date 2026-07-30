@@ -311,6 +311,7 @@ export const EditListingPageComponent = props => {
           stripeAccountLinkError={getAccountLinkError}
           authScopes={authScopes}
           titleId={titleId}
+          isCollaboratorListing={page.isCollaboratorListing}
         />
       </Page>
     );

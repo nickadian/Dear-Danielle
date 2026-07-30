@@ -151,3 +151,29 @@ export const createUserWithIdp = body => {
 export const deleteUserAccount = body => {
   return post('/api/delete-account', body);
 };
+
+// Fetch listings that other users have shared with the current user
+// (i.e. listings where the current user is a collaborator).
+// Returns lightweight JSON: { data: [{ id, title, state, imageUrl }] }.
+//
+// See `server/api/listing-collaborators.js`.
+export const fetchSharedWithMeListings = () => {
+  return request('/api/listing-collaborators/shared-with-me', { method: methods.GET });
+};
+
+// Fetch a listing that the current user can edit as a collaborator.
+// The response mirrors an sdk.ownListings.show response, so it can be
+// merged into the marketplace entity store.
+//
+// See `server/api/listing-collaborators.js`.
+export const showCollaboratorListing = body => {
+  return post('/api/listing-collaborators/show-listing', body);
+};
+
+// Update a listing as a collaborator. Only whitelisted fields are saved
+// (title, description, price, geolocation, publicData and stock totals).
+//
+// See `server/api/listing-collaborators.js`.
+export const collaboratorUpdateListing = body => {
+  return post('/api/listing-collaborators/update-listing', body);
+};

@@ -21,6 +21,9 @@ const {
   getCollaborators,
   addCollaborator,
   removeCollaborator,
+  sharedWithMe,
+  showSharedListing,
+  updateSharedListing,
 } = require('./api/listing-collaborators');
 
 const createUserWithIdp = require('./api/auth/createUserWithIdp');
@@ -67,6 +70,12 @@ router.post('/transition-privileged', transitionPrivileged);
 router.post('/delete-account', deleteAccount);
 
 // Listing collaborators endpoints (multi-user product management)
+// Note: specific routes must be registered before the '/:listingId' route.
+router.get('/listing-collaborators/shared-with-me', sharedWithMe);
+// These two use transit bodies (parsed by the middleware above), so that SDK
+// types (Money, UUID, LatLng) survive the round trip.
+router.post('/listing-collaborators/show-listing', showSharedListing);
+router.post('/listing-collaborators/update-listing', updateSharedListing);
 router.get('/listing-collaborators/:listingId', getCollaborators);
 router.post('/listing-collaborators', express.json(), addCollaborator);
 router.delete('/listing-collaborators', express.json(), removeCollaborator);

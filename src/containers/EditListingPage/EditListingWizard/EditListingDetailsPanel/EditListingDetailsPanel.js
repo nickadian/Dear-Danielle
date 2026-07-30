@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import classNames from 'classnames';
 
 // Import util modules
@@ -9,6 +9,7 @@ import {
   LISTING_STATE_DRAFT,
   SCHEMA_TYPE_ENUM,
   SCHEMA_TYPE_MULTI_ENUM,
+  SCHEMA_TYPE_TEXT,
 } from '../../../../util/types';
 import { LISTING_PAGE_PARAM_TYPE_NEW } from '../../../../util/urlHelpers';
 import {
@@ -273,6 +274,130 @@ const getInitialValues = (
   };
 };
 
+// Maps keys of the AI listing assist response (server/api/ai-listing-assist.js)
+// to candidate keys of custom listing fields (Console-hosted listing field config).
+// The first candidate key that matches a configured listing field wins.
+const AI_SUGGESTION_TO_FIELD_KEYS = {
+  suggestedSize: ['size'],
+  suggestedColor: ['color', 'colour'],
+  suggestedOccasions: ['occasion', 'occasions'],
+};
+
+// Max length of the title field (must match TITLE_MAX_LENGTH in EditListingDetailsForm)
+const AI_TITLE_MAX_LENGTH = 60;
+
+const isEmptyFormValue = value =>
+  value == null || value === '' || (Array.isArray(value) && value.length === 0);
+
+// Case-insensitive lookup of a suggested value against configured enum options.
+// Returns the configured option value or null if there's no match.
+const matchEnumOption = (enumOptions, suggestedValue) => {
+  const match = (enumOptions || []).find(
+    conf => String(conf.option).toLowerCase() === String(suggestedValue).toLowerCase()
+  );
+  return match ? match.option : null;
+};
+
+/**
+ * Apply AI suggestions to the currently rendered EditListingDetailsForm through
+ * final-form's form API (form.change).
+ *
+ * Rules:
+ * - title & description are only filled if the user hasn't typed anything yet.
+ * - Custom listing fields are only set if a matching field exists in the config,
+ *   is relevant for the current listing type & selected categories, and is still unset.
+ * - Enum values are validated against the configured enum options (case-insensitive);
+ *   suggestions without a matching option are ignored.
+ *
+ * @param {Object} formApi final-form form API of EditListingDetailsForm
+ * @param {Object} suggestions response from the AI listing assist endpoint
+ * @param {Array} listingFields configured custom listing fields
+ * @param {Array} listingCategories configured listing categories
+ * @param {String} categoryKey prefix for nested category form fields
+ */
+const applyAISuggestionsToForm = (
+  formApi,
+  suggestions,
+  listingFields,
+  listingCategories,
+  categoryKey
+) => {
+  if (!formApi || !suggestions) {
+    return;
+  }
+  const values = formApi.getState()?.values || {};
+
+  // Title: only fill if empty (AI response might not include one).
+  if (
+    typeof suggestions.title === 'string' &&
+    suggestions.title.trim() &&
+    isEmptyFormValue(values.title)
+  ) {
+    formApi.change('title', suggestions.title.trim().slice(0, AI_TITLE_MAX_LENGTH));
+  }
+
+  // Description: only fill if empty.
+  if (
+    typeof suggestions.description === 'string' &&
+    suggestions.description.trim() &&
+    isEmptyFormValue(values.description)
+  ) {
+    formApi.change('description', suggestions.description.trim());
+  }
+
+  // Custom listing fields (e.g. pub_size, pub_occasion)
+  const listingType = values.listingType;
+  const selectedCategories = pickCategoryFields(values, categoryKey, 1, listingCategories);
+  const targetCategoryIds = Object.values(selectedCategories);
+
+  Object.entries(AI_SUGGESTION_TO_FIELD_KEYS).forEach(([suggestionKey, candidateFieldKeys]) => {
+    const suggestedValue = suggestions[suggestionKey];
+    if (isEmptyFormValue(suggestedValue)) {
+      return;
+    }
+
+    // Only apply to fields that exist in the config and are shown in the current form.
+    const fieldConfig = listingFields.find(conf => {
+      return (
+        candidateFieldKeys.includes(conf.key) &&
+        EXTENDED_DATA_SCHEMA_TYPES.includes(conf.schemaType) &&
+        isFieldForListingType(listingType, conf) &&
+        isFieldForCategory(targetCategoryIds, conf)
+      );
+    });
+    if (!fieldConfig) {
+      return;
+    }
+
+    const { key, scope = 'public', schemaType, enumOptions } = fieldConfig;
+    const namespacedKey = scope === 'public' ? `pub_${key}` : `priv_${key}`;
+
+    // Don't overwrite a value the user has already set.
+    if (!isEmptyFormValue(values[namespacedKey])) {
+      return;
+    }
+
+    if (schemaType === SCHEMA_TYPE_ENUM) {
+      const single = Array.isArray(suggestedValue) ? suggestedValue[0] : suggestedValue;
+      const matchedOption = matchEnumOption(enumOptions, single);
+      if (matchedOption != null) {
+        formApi.change(namespacedKey, matchedOption);
+      }
+    } else if (schemaType === SCHEMA_TYPE_MULTI_ENUM) {
+      const asArray = Array.isArray(suggestedValue) ? suggestedValue : [suggestedValue];
+      const matchedOptions = asArray
+        .map(v => matchEnumOption(enumOptions, v))
+        .filter(v => v != null);
+      if (matchedOptions.length > 0) {
+        formApi.change(namespacedKey, matchedOptions);
+      }
+    } else if (schemaType === SCHEMA_TYPE_TEXT && typeof suggestedValue === 'string') {
+      formApi.change(namespacedKey, suggestedValue);
+    }
+    // Other schema types (long, boolean, youtubeVideoUrl) are not suggested by the AI.
+  });
+};
+
 /**
  * The EditListingDetailsPanel component.
  *
@@ -311,6 +436,10 @@ const EditListingDetailsPanel = props => {
     updatePageTitle: UpdatePageTitle,
     intl,
   } = props;
+
+  // Holds the final-form form API of EditListingDetailsForm,
+  // so that AI suggestions can be applied with form.change.
+  const detailsFormApiRef = useRef(null);
 
   const classes = classNames(rootClassName || css.root, className);
   const { publicData, state } = listing?.attributes || {};
@@ -391,12 +520,13 @@ const EditListingDetailsPanel = props => {
           category={listing?.attributes?.publicData?.categoryLevel1}
           title={listing?.attributes?.title}
           onApply={suggestions => {
-            // The form ref isn't directly accessible here, so we store suggestions
-            // for the form to pick up. For MVP, the user can manually apply.
-            if (suggestions?.description && listing?.attributes) {
-              // Auto-fill will be handled by the form component in a future iteration
-              console.log('AI suggestions:', suggestions);
-            }
+            applyAISuggestionsToForm(
+              detailsFormApiRef.current,
+              suggestions,
+              listingFields,
+              listingCategories,
+              categoryKey
+            );
           }}
         />
       ) : null}
@@ -404,6 +534,7 @@ const EditListingDetailsPanel = props => {
       {canShowEditListingDetailsForm ? (
         <EditListingDetailsForm
           className={css.form}
+          formApiRef={detailsFormApiRef}
           initialValues={initialValues}
           saveActionMsg={submitButtonText}
           onSubmit={values => {

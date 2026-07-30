@@ -3,6 +3,7 @@ import classNames from 'classnames';
 
 // Import configs and util modules
 import { apiBaseUrl } from '../../../../util/api';
+import { isValidCollaboratorEmail } from '../../../../util/collaborators';
 import { FormattedMessage } from '../../../../util/reactIntl';
 import { LISTING_STATE_DRAFT } from '../../../../util/types';
 
@@ -11,8 +12,6 @@ import { H3, ListingLink } from '../../../../components';
 
 // Import modules from this directory
 import css from './EditListingCollaboratorsPanel.module.css';
-
-const isValidEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const EditListingCollaboratorsPanel = props => {
   const {
@@ -74,12 +73,12 @@ const EditListingCollaboratorsPanel = props => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed || !listingId) return;
 
-    if (!isValidEmail(trimmed)) {
+    if (!isValidCollaboratorEmail(trimmed)) {
       setError('Please enter a valid email address.');
       return;
     }
 
-    if (collaborators.includes(trimmed)) {
+    if (collaborators.some(c => c.email === trimmed)) {
       setError('This collaborator has already been added.');
       return;
     }
@@ -92,10 +91,19 @@ const EditListingCollaboratorsPanel = props => {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ listingId, userId: trimmed }),
+      body: JSON.stringify({ listingId, email: trimmed }),
     })
       .then(res => {
-        if (!res.ok) throw new Error('Failed to add collaborator.');
+        if (!res.ok) {
+          return res.json().then(
+            json => {
+              throw new Error(json?.error || 'Failed to add collaborator.');
+            },
+            () => {
+              throw new Error('Failed to add collaborator.');
+            }
+          );
+        }
         return res.json();
       })
       .then(json => {
@@ -118,7 +126,7 @@ const EditListingCollaboratorsPanel = props => {
       method: 'DELETE',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ listingId, userId: collaboratorEmail }),
+      body: JSON.stringify({ listingId, email: collaboratorEmail }),
     })
       .then(res => {
         if (!res.ok) throw new Error('Failed to remove collaborator.');
@@ -155,7 +163,7 @@ const EditListingCollaboratorsPanel = props => {
 
       <div className={css.addForm}>
         <label className={css.label} htmlFor="collaboratorEmail">
-          Invite by email
+          <FormattedMessage id="EditListingCollaboratorsPanel.emailLabel" />
         </label>
         <div className={css.inputRow}>
           <input
@@ -163,9 +171,14 @@ const EditListingCollaboratorsPanel = props => {
             className={css.input}
             type="email"
             value={email}
-            onChange={e => { setEmail(e.target.value); setError(null); }}
+            onChange={e => {
+              setEmail(e.target.value);
+              setError(null);
+            }}
             onKeyDown={handleKeyDown}
-            placeholder="name@example.com"
+            placeholder={intl.formatMessage({
+              id: 'EditListingCollaboratorsPanel.emailPlaceholder',
+            })}
             disabled={disabled || loading}
           />
           <button
@@ -181,22 +194,18 @@ const EditListingCollaboratorsPanel = props => {
 
       {collaborators.length > 0 ? (
         <div className={css.collaboratorSection}>
-          <label className={css.sectionLabel}>
-            Team members ({collaborators.length})
-          </label>
+          <label className={css.sectionLabel}>Team members ({collaborators.length})</label>
           <ul className={css.collaboratorList}>
             {collaborators.map(collab => (
-              <li key={collab} className={css.collaboratorItem}>
+              <li key={collab.email} className={css.collaboratorItem}>
                 <div className={css.collaboratorInfo}>
-                  <span className={css.avatar}>
-                    {collab.charAt(0).toUpperCase()}
-                  </span>
-                  <span className={css.collaboratorEmail}>{collab}</span>
+                  <span className={css.avatar}>{collab.email.charAt(0).toUpperCase()}</span>
+                  <span className={css.collaboratorEmail}>{collab.email}</span>
                 </div>
                 <button
                   type="button"
                   className={css.removeButton}
-                  onClick={() => handleRemove(collab)}
+                  onClick={() => handleRemove(collab.email)}
                   disabled={disabled || loading}
                 >
                   Remove

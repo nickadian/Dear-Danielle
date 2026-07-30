@@ -55,6 +55,38 @@ const getOfferQuantityAndLineItems = orderData => {
 };
 
 /**
+ * Card hold (refundable deposit) line item.
+ *
+ * Providers can set a hold amount on their listing (publicData.holdAmountCents).
+ * The amount is added to the customer's payin on the manual-capture process
+ * (fashion-rental), so the whole sum is preauthorized at checkout and captured
+ * when the provider accepts. It is included for the customer only — it is not
+ * part of the provider payout, so the operator can refund it after the item is
+ * returned.
+ *
+ * @param {Object} publicData listing's publicData
+ * @param {string} currency
+ */
+const getCardHoldLineItemMaybe = (publicData, currency) => {
+  const { holdAmountCents, transactionProcessAlias } = publicData || {};
+  const isManualCaptureProcess =
+    typeof transactionProcessAlias === 'string' &&
+    transactionProcessAlias.startsWith('fashion-rental');
+  const isValidHold = Number.isInteger(holdAmountCents) && holdAmountCents > 0;
+
+  return isManualCaptureProcess && isValidHold
+    ? [
+        {
+          code: 'line-item/card-hold',
+          unitPrice: new Money(holdAmountCents, currency),
+          quantity: 1,
+          includeFor: ['customer'],
+        },
+      ]
+    : [];
+};
+
+/**
  * Get quantity for fixed bookings with seats.
  * @param {Object} orderData
  * @param {number} [orderData.seats]
@@ -232,6 +264,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   const lineItems = [
     order,
     ...extraLineItems,
+    ...getCardHoldLineItemMaybe(publicData, currency),
     ...getProviderCommissionMaybe(providerCommission, order, currency),
     ...getCustomerCommissionMaybe(customerCommission, order, currency),
   ];

@@ -36,6 +36,7 @@ import {
 import { ensureCurrentUser, ensureListing } from '../../../util/data';
 import { INQUIRY_PROCESS_NAME, resolveLatestProcessName } from '../../../transactions/transaction';
 import { isFeatureEnabled } from '../../../util/featureFlags';
+import { pickCollaboratorEditableTabs } from '../../../util/collaborators';
 
 // Import shared components
 import {
@@ -507,6 +508,7 @@ class EditListingWizard extends Component {
       config,
       routeConfiguration,
       authScopes,
+      isCollaboratorListing,
       ...rest
     } = this.props;
 
@@ -559,7 +561,12 @@ class EditListingWizard extends Component {
       !isNewListingFlow && isFeatureEnabled(config, 'enableMultiUserManagement')
         ? [COLLABORATORS]
         : [];
-    const tabs = [...baseTabs, ...collaboratorsMaybe];
+    // A collaborator (non-owner) only sees the tabs whose fields the
+    // collaborator update endpoint can save. Managing collaborators, photos
+    // and availability stay owner-only.
+    const tabs = isCollaboratorListing
+      ? pickCollaboratorEditableTabs(baseTabs)
+      : [...baseTabs, ...collaboratorsMaybe];
 
     // Check if wizard tab is active / linkable.
     // When creating a new listing, we don't allow users to access next tab until the current one is completed.

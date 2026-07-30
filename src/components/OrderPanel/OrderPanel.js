@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import loadable from '@loadable/component';
 import classNames from 'classnames';
+
+import { addToCart, setDrawerOpen, selectCartItems } from '../../ducks/cart.duck';
+import { featureFlags } from '../../config/configFeatureFlags';
 
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
 import {
@@ -36,7 +40,7 @@ import {
   resolveLatestProcessName,
 } from '../../transactions/transaction';
 
-import { ModalInMobile, PrimaryButton, AvatarSmall, H1, H2 } from '../../components';
+import { ModalInMobile, PrimaryButton, SecondaryButton, AvatarSmall, H1, H2 } from '../../components';
 import PriceVariantPicker from './PriceVariantPicker/PriceVariantPicker';
 import SubmitFinePrint from './SubmitFinePrint/SubmitFinePrint';
 
@@ -134,6 +138,55 @@ const handleSubmit = (isOwnListing, isClosed, isDirectSubmit, onSubmit, history,
 };
 
 const dateFormattingOptions = { month: 'short', day: 'numeric', weekday: 'short' };
+
+// Add-to-Cart button for purchasable listings (multi-renter cart).
+// Stores a plain snapshot of the listing in the cart duck (persisted to
+// localStorage) and opens the cart drawer as feedback.
+const AddToCartMaybe = props => {
+  const { show, listing, author } = props;
+  const dispatch = useDispatch();
+  const cartItems = useSelector(selectCartItems);
+
+  if (!show) {
+    return null;
+  }
+
+  const listingId = listing.id?.uuid;
+  const inCart = cartItems.some(item => item.listingId === listingId);
+
+  const handleAdd = () => {
+    const price = listing.attributes?.price;
+    const variants = listing.images?.[0]?.attributes?.variants || {};
+    const imageUrl =
+      variants['listing-card']?.url ||
+      variants['square-small']?.url ||
+      Object.values(variants)[0]?.url ||
+      null;
+
+    dispatch(
+      addToCart({
+        listingId,
+        providerId: author?.id?.uuid,
+        providerName: userDisplayNameAsString(author, ''),
+        title: listing.attributes?.title,
+        price: price ? { amount: price.amount, currency: price.currency } : null,
+        imageUrl,
+      })
+    );
+    dispatch(setDrawerOpen(true));
+  };
+
+  return (
+    <SecondaryButton
+      type="button"
+      className={css.addToCartButton}
+      onClick={handleAdd}
+      disabled={inCart}
+    >
+      {inCart ? 'In cart ✓' : 'Add to cart'}
+    </SecondaryButton>
+  );
+};
 
 const PriceMaybe = props => {
   const {
@@ -559,6 +612,18 @@ const OrderPanel = props => {
             <FormattedMessage id="OrderPanel.unknownTransactionProcess" />
           </p>
         ) : null}
+
+        <AddToCartMaybe
+          show={
+            mounted &&
+            featureFlags.enableCart &&
+            showProductOrderForm &&
+            !isOwnListing &&
+            !isOutOfStock
+          }
+          listing={listing}
+          author={author}
+        />
       </ModalInMobile>
       <div className={css.openOrderForm}>
         <PriceMaybe
@@ -602,6 +667,17 @@ const OrderPanel = props => {
             )}
           </PrimaryButton>
         )}
+        <AddToCartMaybe
+          show={
+            mounted &&
+            featureFlags.enableCart &&
+            showProductOrderForm &&
+            !isOwnListing &&
+            !isOutOfStock
+          }
+          listing={listing}
+          author={author}
+        />
       </div>
     </div>
   );

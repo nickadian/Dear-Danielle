@@ -1,0 +1,87 @@
+@import '../../styles/customMediaQueries.css';
+
+/* ============================================
+   Dear Danielle — "Shop by occasion" section
+   Editorial luxury aesthetic (matches
+   CustomExtendedDataSection tag styling)
+   ============================================ */
+
+.root {
+  background-color: var(--colorWhite);
+}
+
+.content {
+  max-width: var(--contentMaxWidth);
+  margin: 0 auto;
+  padding: 40px 24px;
+
+  @media (--viewportMedium) {
+    padding: 56px 32px;
+  }
+}
+
+.heading {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--colorGrey500);
+  margin: 0 0 14px 0;
+  padding: 0;
+
+  @media (--viewportMedium) {
+    margin: 0 0 18px 0;
+  }
+}
+
+/* Horizontal scroll on mobile, wrapping rows from medium viewport up */
+.tagList {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  /* Let the scroll area bleed to the viewport edges on mobile */
+  margin: 0 -24px;
+  padding: 2px 24px;
+
+  @media (--viewportMedium) {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.tagList::-webkit-scrollbar {
+  display: none;
+}
+
+.tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 20px;
+  border: 1px solid var(--colorGrey100);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--colorGrey700);
+  background: transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+
+  &:hover,
+  &:focus {
+    background: var(--colorGrey50);
+    border-color: var(--colorGrey300);
+    color: var(--colorGrey900);
+    text-decoration: none;
+  }
+}

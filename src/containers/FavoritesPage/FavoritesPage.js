@@ -93,8 +93,6 @@ export const FavoritesPageComponent = () => {
   );
 };
 
-FavoritesPageComponent.loadData = (params, search, config) => {
-  return FavoritesPageComponent.loadData;
-};
+export { loadData } from './FavoritesPage.duck';
 
 export default FavoritesPageComponent;

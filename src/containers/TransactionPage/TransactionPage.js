@@ -668,7 +668,7 @@ export const TransactionPageComponent = props => {
     isOfferOrRequest,
     isNegotiationProcess,
     isBookingProcess: isBookingProcess(processName),
-    isPurchaseProcess: processName === PURCHASE_PROCESS_NAME,
+    isPurchaseProcess: isPurchaseProcess(processName),
     isInquiryProcess: processName === INQUIRY_PROCESS_NAME,
     isRegularNegotiation,
   });

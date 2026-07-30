@@ -13,6 +13,7 @@ import {
 } from '../../util/dates';
 import { uniqueBy } from '../../util/generators';
 import { storableError } from '../../util/errors';
+import { showCollaboratorListing, collaboratorUpdateListing } from '../../util/api';
 import * as log from '../../util/log';
 import { parse } from '../../util/urlHelpers';
 import { isUserAuthorized } from '../../util/userHelpers';
@@ -101,6 +102,19 @@ export const showListingThunk = createAsyncThunk(
 
     return sdk.ownListings
       .show({ ...actionPayload, ...queryParams })
+      .catch(e => {
+        // The listing might not be the current user's own listing, but a
+        // listing that has been shared with them (collaborator). Try the
+        // collaborator endpoint, which verifies membership on the server.
+        // Note: this local API endpoint is browser-only, so skip it in SSR.
+        const canTryCollaboratorEndpoint = typeof window !== 'undefined';
+        if (!canTryCollaboratorEndpoint) {
+          return Promise.reject(e);
+        }
+        return showCollaboratorListing({ listingId: actionPayload.id, queryParams })
+          .then(response => ({ ...response, isCollaboratorListing: true }))
+          .catch(() => Promise.reject(e));
+      })
       .then(response => {
         // EditListingPage fetches new listing data, which also needs to be added to global data
         dispatch(addMarketplaceEntities(response));
@@ -221,6 +235,27 @@ export const updateListingThunk = createAsyncThunk(
       'fields.image': imageVariantInfo.fieldsImage,
       ...imageVariantInfo.imageVariants,
     };
+
+    // When the current user is a collaborator (not the owner) of this
+    // listing, ownListings.update is not available. Route the save through
+    // the collaborator update endpoint instead, which whitelists the fields
+    // a collaborator may change and verifies membership on the server.
+    if (getState().EditListingPage.isCollaboratorListing) {
+      return collaboratorUpdateListing({
+        listingId: id,
+        updateValues: rest,
+        stockUpdate,
+        queryParams,
+      })
+        .then(response => {
+          dispatch(addMarketplaceEntities(response));
+          return { response, tab };
+        })
+        .catch(e => {
+          log.error(e, 'collaborator-update-listing-failed', { listingData: data });
+          return rejectWithValue(storableError(e));
+        });
+    }
 
     return updateStockOfListingMaybe(id, stockUpdate, dispatch)
       .then(() => sdk.ownListings.update(ownListingUpdateValues, queryParams))
@@ -552,6 +587,9 @@ const initialState = {
   // Error instance placeholders for each endpoint
   createListingDraftError: null,
   listingId: null,
+  // True when the loaded listing is not the current user's own listing, but
+  // one that has been shared with them as a collaborator.
+  isCollaboratorListing: false,
   publishListingError: null,
   updateListingError: null,
   showListingsError: null,
@@ -698,6 +736,7 @@ const editListingPageSlice = createSlice({
           Object.assign(state, initialState);
           state.listingId = listingIdFromPayload;
         }
+        state.isCollaboratorListing = !!action.payload.isCollaboratorListing;
       })
       .addCase(showListingThunk.rejected, (state, action) => {
         // eslint-disable-next-line no-console
@@ -903,7 +942,10 @@ export const loadData = (params, search, config) => (dispatch, getState, sdk) =>
         // so we need to pick the first one
         const listing = response[0]?.data?.data;
         const transactionProcessAlias = listing?.attributes?.publicData?.transactionProcessAlias;
-        if (listing && isBookingProcessAlias(transactionProcessAlias)) {
+        // Availability exceptions use own-listing scoped endpoints, so they
+        // are not fetched when editing a listing as a collaborator.
+        const isCollaboratorListing = getState().EditListingPage.isCollaboratorListing;
+        if (listing && !isCollaboratorListing && isBookingProcessAlias(transactionProcessAlias)) {
           fetchLoadDataExceptions(dispatch, listing, search, config.localization.firstDayOfWeek);
         }
       }

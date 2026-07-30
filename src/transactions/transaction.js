@@ -292,7 +292,9 @@ export const getAllTransitionsForEveryProcess = () => {
 export const isPurchaseProcess = processName => {
   const latestProcessName = resolveLatestProcessName(processName);
   const processInfo = PROCESSES.find(process => process.name === latestProcessName);
-  return [PURCHASE_PROCESS_NAME].includes(processInfo?.name);
+  // fashion-rental is a purchase-shaped process (item unit type) with manual capture,
+  // so all purchase UI flows apply to it as well.
+  return [PURCHASE_PROCESS_NAME, FASHION_RENTAL_PROCESS_NAME].includes(processInfo?.name);
 };
 
 /**

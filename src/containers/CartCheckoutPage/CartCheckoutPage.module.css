@@ -117,6 +117,100 @@
   }
 }
 
+.errorBanner {
+  background: var(--colorFailLight, #fff0f0);
+  color: var(--colorFail, #ff0000);
+  padding: 12px 16px;
+  border-radius: var(--borderRadiusMedium);
+  margin-bottom: 24px;
+  font-weight: var(--fontWeightMedium);
+}
+
+.sectionHeading {
+  margin: 24px 0 12px 0;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.shippingForm {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px 16px;
+
+  @media (--viewportMedium) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.formField,
+.formFieldWide {
+  display: flex;
+  flex-direction: column;
+
+  & input,
+  & select {
+    border: 1px solid var(--colorGrey100);
+    border-radius: var(--borderRadiusMedium);
+    padding: 8px 12px;
+  }
+}
+
+.formFieldWide {
+  @media (--viewportMedium) {
+    grid-column: span 2;
+  }
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: var(--fontWeightSemiBold);
+  margin-bottom: 4px;
+}
+
+.itemMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statusProcessing {
+  font-size: 13px;
+  color: var(--marketplaceColor);
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.statusSuccess {
+  font-size: 13px;
+  color: var(--colorSuccess, #2ecc71);
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.statusFailed {
+  font-size: 13px;
+  color: var(--colorFail, #ff0000);
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.savedCard {
+  font-weight: var(--fontWeightMedium);
+}
+
+.changeCardLink {
+  margin-left: 12px;
+  color: var(--marketplaceColor);
+  font-size: 13px;
+}
+
+.noCardNotice {
+  border: 1px solid var(--colorGrey100);
+  border-radius: var(--borderRadiusMedium);
+  padding: 16px;
+  margin-bottom: 16px;
+  color: var(--colorGrey500);
+}
+
 .successMessage {
   text-align: center;
   padding: 48px 0;

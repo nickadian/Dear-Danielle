@@ -306,6 +306,7 @@ const getListingTypeConfig = (config, listingType) => {
  * @param {boolean} [props.autoFocus] - Whether the form should autofocus
  * @param {Function} props.onListingTypeChange - The listing type change function
  * @param {Function} props.onSubmit - The submit function
+ * @param {Object} [props.formApiRef] - Ref that gets the final-form form API assigned to its current property
  * @returns {JSX.Element}
  */
 const EditListingDetailsForm = props => (
@@ -338,9 +339,23 @@ const EditListingDetailsForm = props => (
         listingFieldsConfig = [],
         listingCurrency,
         values,
+        formApiRef,
       } = formRenderProps;
 
       const intl = useIntl();
+
+      // Expose the form API to the parent component (e.g. so that
+      // AI suggestions can be applied to this form with form.change).
+      useEffect(() => {
+        if (formApiRef) {
+          formApiRef.current = formApi;
+        }
+        return () => {
+          if (formApiRef) {
+            formApiRef.current = null;
+          }
+        };
+      }, [formApiRef, formApi]);
       const { listingType, transactionProcessAlias, unitType } = values;
       const [allCategoriesChosen, setAllCategoriesChosen] = useState(false);
 

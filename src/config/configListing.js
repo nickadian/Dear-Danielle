@@ -126,8 +126,11 @@ export const listingTypes = [
     listingType: 'fashion-rental',
     label: 'Fashion Rental',
     transactionType: {
-      process: 'default-purchase',
-      alias: 'default-purchase/release-1',
+      // Manual-capture process: payment is preauthorized at checkout and captured
+      // when the provider accepts (auto-capture after 7 days, auto-decline after 14).
+      // Required for card holds. Process definition: ext/transaction-processes/fashion-rental
+      process: 'fashion-rental',
+      alias: 'fashion-rental/release-1',
       unitType: 'item',
     },
     stockType: 'oneItem',

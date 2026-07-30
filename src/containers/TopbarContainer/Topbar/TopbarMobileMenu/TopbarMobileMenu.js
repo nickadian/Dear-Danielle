@@ -181,6 +181,11 @@ const TopbarMobileMenu = props => {
             </NamedLink>
           </li>
           {manageListingsLinkMaybe}
+          <li className={classNames(css.navigationLink, currentPageClass('FavoritesPage'))}>
+            <NamedLink name="FavoritesPage">
+              <FormattedMessage id="TopbarMobileMenu.favoritesLink" />
+            </NamedLink>
+          </li>
           <li className={classNames(css.navigationLink, currentPageClass('ProfileSettingsPage'))}>
             <NamedLink name="ProfileSettingsPage">
               <FormattedMessage id="TopbarMobileMenu.profileSettingsLink" />

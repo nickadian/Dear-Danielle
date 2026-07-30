@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dear Danielle — Technical Handoff &amp; Documentation</title>
+<style>
+  :root {
+    --ink: #1a1a2e; --muted: #5b5b73; --accent: #6938EF; --accent-soft: #f0eafe;
+    --line: #e6e4ef; --bg: #ffffff; --panel: #faf9fd; --ok: #0e8345; --warn: #b45309;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.6; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 96px; }
+  header.hero { border-bottom: 1px solid var(--line); padding: 48px 0 32px; margin-bottom: 8px; }
+  header.hero h1 { margin: 0 0 4px; font-size: 30px; letter-spacing: -0.02em; }
+  header.hero p { margin: 0; color: var(--muted); }
+  .badge { display: inline-block; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; margin-bottom: 12px; }
+  nav.toc { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 22px; margin: 28px 0; }
+  nav.toc strong { display: block; margin-bottom: 6px; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 40px; }
+  h2 { font-size: 21px; margin: 48px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); letter-spacing: -0.01em; }
+  h3 { font-size: 16px; margin: 26px 0 8px; }
+  p, li { color: #33334d; }
+  code { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  pre { background: #171724; color: #e8e8f2; border-radius: 8px; padding: 14px 18px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+  pre code { background: none; border: none; color: inherit; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); font-weight: 600; }
+  .ok { color: var(--ok); font-weight: 600; }
+  .warn { color: var(--warn); font-weight: 600; }
+  .note { background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 16px 0; }
+  .checklist li { margin-bottom: 6px; }
+  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  @media (max-width: 640px) { nav.toc ol { columns: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <span class="badge">Technical Handoff</span>
+  <h1>Dear Danielle — Marketplace Documentation</h1>
+  <p>Luxury fashion rental marketplace built on the Sharetribe Web Template. Prepared by RentalTide Inc. as part of project handoff.</p>
+</header>
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#overview">Architecture overview</a></li>
+    <li><a href="#features">Delivered features</a></li>
+    <li><a href="#env">Environment variables</a></li>
+    <li><a href="#golive">Going-live checklist</a></li>
+    <li><a href="#process">Transaction process</a></li>
+    <li><a href="#console">Sharetribe Console configuration</a></li>
+    <li><a href="#cart">Cart &amp; multi-lender checkout</a></li>
+    <li><a href="#holds">Card holds</a></li>
+    <li><a href="#collab">Listing collaborators</a></li>
+    <li><a href="#other">Favorites, occasions, AI assist</a></li>
+    <li><a href="#testing">Testing checklist</a></li>
+    <li><a href="#handoff">Handoff &amp; account transfer record</a></li>
+  </ol>
+</nav>
+
+<h2 id="overview">1. Architecture overview</h2>
+<p>The application is a customized fork of the <a href="https://github.com/sharetribe/web-template">Sharetribe Web Template</a> (React + Redux client with an Express server for server-side rendering and privileged API calls).</p>
+<table>
+  <tr><th>Layer</th><th>What it is</th><th>Where</th></tr>
+  <tr><td>Marketplace backend</td><td>Sharetribe (hosted): users, listings, transactions, payments via Stripe Connect, email notifications</td><td>Sharetribe Console — marketplace <code>brihannab-dev</code> (dev environment)</td></tr>
+  <tr><td>Web application</td><td>This repository — customized Sharetribe Web Template</td><td>GitHub; deployed to Heroku (<code>deardanielle-*.herokuapp.com</code>)</td></tr>
+  <tr><td>Transaction process</td><td>Custom manual-capture purchase process <code>fashion-rental</code></td><td><code>ext/transaction-processes/fashion-rental/</code>, pushed to Sharetribe as <code>fashion-rental/release-1</code></td></tr>
+  <tr><td>Payments</td><td>Stripe Connect (platform account + per-lender connected accounts)</td><td>Stripe dashboard; keys in Heroku + Console</td></tr>
+  <tr><td>AI listing assist</td><td>Claude API for listing description/tag suggestions</td><td><code>server/api/ai-listing-assist.js</code>; needs <code>ANTHROPIC_API_KEY</code></td></tr>
+</table>
+
+<h2 id="features">2. Delivered features</h2>
+<table>
+  <tr><th>Feature</th><th>Status</th><th>Key code</th></tr>
+  <tr><td>Sharetribe setup &amp; configuration</td><td class="ok">Delivered</td><td>Repository + Console configuration (listing fields, categories, branding)</td></tr>
+  <tr><td>Product categories &amp; closet-style favoriting</td><td class="ok">Delivered</td><td><code>src/ducks/favorites.duck.js</code>, <code>src/components/FavoriteButton/</code>, <code>src/containers/FavoritesPage/</code>; categories in Console listing fields</td></tr>
+  <tr><td>Shipping-first flow (reduced location dependency)</td><td class="ok">Delivered</td><td><code>src/config/configSearch.js</code> (keyword search), <code>configLayout.js</code> (grid), <code>configListing.js</code> (shipping only)</td></tr>
+  <tr><td>Cart with multi-renter support</td><td class="ok">Delivered</td><td><code>src/ducks/cart.duck.js</code>, <code>src/containers/CartPage/</code>, <code>src/containers/CartCheckoutPage/</code>, Add-to-Cart in <code>src/components/OrderPanel/</code></td></tr>
+  <tr><td>Saved cards &amp; configurable card holds</td><td class="ok">Delivered</td><td>Saved cards: template Payment Methods page. Holds: <code>server/api-util/lineItems.js</code> + pricing panels + manual-capture process</td></tr>
+  <tr><td>Multi-user product management (collaborators)</td><td class="ok">Delivered</td><td><code>server/api/listing-collaborators.js</code>, <code>server/api-util/integrationSdk.js</code>, collaborators wizard tab, Manage Listings "Shared with me"</td></tr>
+  <tr><td>T-shirt size selection</td><td class="ok">Delivered</td><td>Console listing field <code>size</code> (configured in Sharetribe Console → Listing fields)</td></tr>
+  <tr><td>Occasion-based tags &amp; filtering</td><td class="ok">Delivered</td><td>Console listing field <code>occasion</code> (multi-enum, searchable); tag pills on listing page; home page "Shop by occasion" section</td></tr>
+  <tr><td>Stripe Connect setup with card holds</td><td class="ok">Delivered</td><td>Template Stripe onboarding + custom <code>fashion-rental</code> preauthorization process</td></tr>
+  <tr><td>AI listing assistance (bonus)</td><td class="ok">Delivered</td><td><code>server/api/ai-listing-assist.js</code>, <code>src/components/AIAssistButton/</code></td></tr>
+</table>
+
+<h2 id="env">3. Environment variables</h2>
+<p>Set in Heroku under <em>Settings → Config Vars</em> (and locally in a <code>.env</code> file for development).</p>
+<table>
+  <tr><th>Variable</th><th>Required</th><th>Purpose</th></tr>
+  <tr><td><code>REACT_APP_SHARETRIBE_SDK_CLIENT_ID</code></td><td>Yes</td><td>Marketplace API client ID (Console → Build → Advanced → Applications)</td></tr>
+  <tr><td><code>SHARETRIBE_SDK_CLIENT_SECRET</code></td><td>Yes</td><td>Client secret for the same application (server-side privileged calls: pricing, checkout)</td></tr>
+  <tr><td><code>REACT_APP_MARKETPLACE_ROOT_URL</code></td><td>Yes</td><td>Canonical URL of the deployed app (e.g. the Heroku URL or custom domain)</td></tr>
+  <tr><td><code>REACT_APP_STRIPE_PUBLISHABLE_KEY</code></td><td>Yes</td><td>Stripe publishable key (test key on dev, live key for production). The matching secret key is set in Sharetribe Console → Payments</td></tr>
+  <tr><td><code>REACT_APP_MAPBOX_ACCESS_TOKEN</code></td><td>Yes</td><td>Mapbox token (free account) — used for address autocomplete on shipping/location inputs</td></tr>
+  <tr><td><code>ANTHROPIC_API_KEY</code></td><td>For AI assist</td><td>Claude API key for AI listing suggestions (<a href="https://console.anthropic.com">console.anthropic.com</a>)</td></tr>
+  <tr><td><code>SHARETRIBE_INTEGRATION_SDK_CLIENT_ID</code></td><td>For collaborators</td><td>Integration API application (Console → Build → Advanced → Applications → Add new → Integration API). Without it, the collaborators feature is dormant</td></tr>
+  <tr><td><code>SHARETRIBE_INTEGRATION_SDK_CLIENT_SECRET</code></td><td>For collaborators</td><td>Secret for the Integration API application</td></tr>
+  <tr><td><code>REACT_APP_MARKETPLACE_NAME</code></td><td>Recommended</td><td>Marketplace display name used in meta tags and emails</td></tr>
+  <tr><td><code>NODE_ENV</code> / <code>REACT_APP_ENV</code></td><td>Set by Heroku</td><td>Standard environment flags</td></tr>
+</table>
+
+<h2 id="golive">4. Going-live checklist</h2>
+<p>The app currently runs against the <strong>dev</strong> Sharetribe environment. To launch:</p>
+<ol class="checklist">
+  <li>In Sharetribe Console, complete the <em>Go live</em> flow (paid Sharetribe plan) to get a <strong>Live</strong> environment.</li>
+  <li>Create a new application under the Live environment (Console → Build → Advanced → Applications) and put its client ID/secret into Heroku config vars (<code>REACT_APP_SHARETRIBE_SDK_CLIENT_ID</code>, <code>SHARETRIBE_SDK_CLIENT_SECRET</code>).</li>
+  <li>Push the transaction process to the Live environment and recreate the alias:
+    <pre><code>flex-cli login
+flex-cli process create --path ext/transaction-processes/fashion-rental --process fashion-rental -m &lt;live-marketplace-id&gt;
+flex-cli process create-alias --process fashion-rental --version 1 --alias release-1 -m &lt;live-marketplace-id&gt;</code></pre></li>
+  <li>Recreate Console configuration in Live (listing fields <code>size</code>, <code>occasion</code>, <code>condition</code>, categories, branding) — Console content does not copy automatically from dev to live.</li>
+  <li>Connect Stripe in <strong>live mode</strong>: live secret key into Console → Payments, live publishable key into Heroku (<code>REACT_APP_STRIPE_PUBLISHABLE_KEY</code>).</li>
+  <li>Create a Live Integration API application and update the two <code>SHARETRIBE_INTEGRATION_SDK_*</code> vars.</li>
+  <li>Sign up for Mapbox (free) and set <code>REACT_APP_MAPBOX_ACCESS_TOKEN</code>.</li>
+  <li>Optionally add a custom domain in Heroku (<a href="https://devcenter.heroku.com/articles/custom-domains">Heroku custom domains</a>) and update <code>REACT_APP_MARKETPLACE_ROOT_URL</code>.</li>
+  <li>Run the <a href="#testing">testing checklist</a> end to end with a real card in test mode first.</li>
+</ol>
+
+<h2 id="process">5. Transaction process (<code>fashion-rental</code>)</h2>
+<p>Custom manual-capture purchase process. Definition: <code>ext/transaction-processes/fashion-rental/process.edn</code>; client mirror: <code>src/transactions/transactionProcessFashionRental.js</code>. Pushed to the marketplace as <code>fashion-rental</code>, alias <code>release-1</code>.</p>
+<ol>
+  <li><strong>Order placed</strong> — customer pays; the card is <em>authorized only</em> (funds held, not captured). State: <code>preauthorized</code>.</li>
+  <li><strong>Lender accepts</strong> — payment captured. Auto-captures after <strong>7 days</strong> if the lender doesn't respond; auto-declines (full release of the hold) after <strong>14 days</strong>.</li>
+  <li><strong>Shipping</strong> — lender marks shipped; customer marks received (auto after 14 days). Payout to the lender is created when the order is received.</li>
+  <li><strong>Disputes</strong> — customer can dispute after delivery; operator resolves (received or canceled with refund).</li>
+  <li><strong>Reviews</strong> — both parties review after completion; double-blind publishing.</li>
+</ol>
+<p>All 30 notification email templates live in <code>ext/transaction-processes/fashion-rental/templates/</code> and are pushed together with the process.</p>
+
+<h2 id="console">6. Sharetribe Console configuration</h2>
+<div class="note"><strong>Important:</strong> the Console "Listing types" screen only offers Sharetribe's built-in processes. The custom <code>fashion-rental</code> process is bound <em>in code</em>: <code>src/config/configListing.js</code> defines the listing type, and <code>src/util/configHelpers.js</code> is modified to merge code-level listing config over the hosted config. Do not switch the Console listing type — leave it as is.</div>
+<ul>
+  <li><strong>Listing fields</strong> (Console → Listings → Listing fields): <code>size</code> (text), <code>occasion</code> (multi-enum, searchable — powers the home-page occasion links and search filtering), <code>condition</code> (enum). Occasion option IDs must match the ones used by the home page section (wedding, date-night, party, …).</li>
+  <li><strong>Listing categories</strong>: managed in Console → Listings → Listing categories.</li>
+  <li><strong>Existing listings caveat</strong>: listings created before the process switch carry their old process alias. Re-save each one through the edit wizard (or recreate) so it picks up <code>fashion-rental/release-1</code>. New listings are correct automatically.</li>
+</ul>
+
+<h2 id="cart">7. Cart &amp; multi-lender checkout</h2>
+<ul>
+  <li><strong>Add to cart</strong>: button on every purchasable listing page. Cart persists in the browser (localStorage) and groups items by lender. Cart icon + drawer in the top bar.</li>
+  <li><strong>Checkout</strong> (<code>/cart/checkout</code>): because Sharetribe transactions are one-listing-per-transaction, the checkout places <em>one order per cart item, sequentially</em>, showing per-item progress. A single shipping address is collected and attached to every order.</li>
+  <li><strong>Payment</strong>: requires a <em>saved default card</em> (Account settings → Payment methods). The saved card is attached to the customer's Stripe customer, which is what allows it to be charged across multiple payment intents in one run. Users without a saved card are prompted to add one first.</li>
+  <li><strong>Failure behavior</strong>: items ordered successfully leave the cart immediately; on a failure (e.g. card declined) the sequence stops and the remaining items stay in the cart for retry. Unaccepted authorizations are released automatically by the process.</li>
+</ul>
+<p>Key files: <code>src/ducks/cart.duck.js</code>, <code>src/containers/CartCheckoutPage/CartCheckoutPage.js</code> + <code>.duck.js</code>.</p>
+
+<h2 id="holds">8. Card holds</h2>
+<ul>
+  <li>Lenders set an optional <strong>hold amount</strong> when pricing a listing (stored as <code>publicData.holdAmountCents</code>).</li>
+  <li>At checkout the hold is added to the customer's total as a <code>Card hold</code> line item (customer-side only — it is not part of the lender payout, so the marketplace operator can refund it after the item comes back in good condition).</li>
+  <li>The entire amount (rental + shipping + hold) is preauthorized at checkout and captured when the lender accepts. If the lender declines or lets the order expire, the full authorization is released — the customer is never charged.</li>
+  <li>Feature toggle: <code>enableCardHolds</code> in <code>src/config/configFeatureFlags.js</code>. Server logic: <code>server/api-util/lineItems.js</code>.</li>
+</ul>
+
+<h2 id="collab">9. Listing collaborators (multi-user product management)</h2>
+<ul>
+  <li>Owners add collaborators <em>by email</em> from the "Collaborators" tab in the listing edit wizard. The email must belong to an existing marketplace user.</li>
+  <li>Collaborators see shared listings under <strong>Manage listings → Shared with me</strong> and can edit details, pricing, stock, delivery and location. Photos, availability, publishing and the collaborator list itself remain owner-only.</li>
+  <li>All permission checks happen server-side: the caller's identity comes from their login session, and membership is verified against the listing before any change. Collaborators cannot modify the collaborator list or private data.</li>
+  <li><strong>Requires</strong> the two <code>SHARETRIBE_INTEGRATION_SDK_*</code> environment variables. Without them, adding collaborators still works but grants no access yet.</li>
+</ul>
+<p>Key files: <code>server/api/listing-collaborators.js</code>, <code>server/api-util/integrationSdk.js</code>, <code>src/util/collaborators.js</code>.</p>
+
+<h2 id="other">10. Favorites, occasions, AI assist</h2>
+<h3>Closet-style favoriting</h3>
+<p>Heart button on listing cards and listing pages; favorites saved to the user's profile and shown on <code>/favorites</code> (linked from the top bar when logged in). Toggle: <code>enableFavoriting</code>.</p>
+<h3>Shop by occasion</h3>
+<p>The home page shows a "Shop by occasion" pill row (wedding, date night, party, …). Each pill links to search filtered by the <code>occasion</code> field. Options are read live from the Console listing-field config, so renaming options in Console updates the section automatically. Component: <code>src/containers/LandingPage/SectionOccasions.js</code>.</p>
+<h3>AI listing assist</h3>
+<p>When creating a listing, the lender can generate a suggested description, size and occasion tags from the listing title/photos context. "Apply" fills any fields the lender hasn't already filled — it never overwrites manual input. Requires <code>ANTHROPIC_API_KEY</code>. Server: <code>server/api/ai-listing-assist.js</code>.</p>
+
+<h2 id="testing">11. Testing checklist</h2>
+<ol class="checklist">
+  <li>Create two lender accounts, complete Stripe onboarding for each (test mode: use Stripe's test data), and publish one listing each with a price, shipping fee and a card hold amount.</li>
+  <li>As a customer: save a card under Account settings → Payment methods (Stripe test card <code>4242 4242 4242 4242</code>).</li>
+  <li>Add both listings to the cart, open the cart, proceed to checkout — verify the order is split per lender and both orders complete, and that each order breakdown shows the item, shipping and <em>Card hold</em> lines.</li>
+  <li>As each lender: accept one order, decline the other. Verify capture on accept and full release on decline (Stripe dashboard → Payments).</li>
+  <li>Mark the accepted order shipped (lender) then received (customer); verify the lender payout is created and both parties can leave reviews.</li>
+  <li>Add a collaborator by email to a listing; log in as the collaborator, edit the price from "Shared with me", and verify the change saved.</li>
+  <li>Favorite a listing, check <code>/favorites</code>; click a home-page occasion pill and verify search filters.</li>
+  <li>Create a listing with AI assist and apply the suggestions.</li>
+</ol>
+
+<h2 id="handoff">12. Handoff &amp; account transfer record</h2>
+<table>
+  <tr><th>Asset</th><th>Status / action</th></tr>
+  <tr><td>Source code (GitHub)</td><td>Full repository including this documentation. Ownership transfer available on request — provide a GitHub username.</td></tr>
+  <tr><td>Hosting (Heroku)</td><td>App transfer initiated to <code>hello@deardanielle.com</code>. Config vars listed in <a href="#env">section 3</a> must be maintained by the new owner.</td></tr>
+  <tr><td>Sharetribe</td><td>Marketplace runs in the client's own Sharetribe account (dev environment <code>brihannab-dev</code>). Going live is done from the client's Console (<a href="#golive">section 4</a>).</td></tr>
+  <tr><td>Stripe</td><td>Client must connect their own Stripe account keys (live publishable key in Heroku, live secret key in Console → Payments).</td></tr>
+  <tr><td>Mapbox</td><td>Client signs up (free) and sets their own token.</td></tr>
+  <tr><td>Anthropic (AI assist)</td><td>Client signs up at console.anthropic.com and sets their own API key.</td></tr>
+  <tr><td>Transaction process</td><td>Pushed and aliased on the dev marketplace; definition + email templates included in the repository for pushing to Live.</td></tr>
+</table>
+
+<footer>
+  Dear Danielle marketplace — technical handoff documentation. Built on the Sharetribe Web Template.
+  For platform questions see the <a href="https://www.sharetribe.com/help/">Sharetribe Help Center</a> and <a href="https://devcenter.heroku.com/">Heroku Dev Center</a>.
+</footer>
+
+</div>
+</body>
+</html>

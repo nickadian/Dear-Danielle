@@ -179,6 +179,9 @@ app.use(
 );
 app.use(cookieParser());
 
+// Technical handoff documentation (copied from public/ into build/ at build time)
+app.use('/docs', express.static(path.join(buildPath, 'docs')));
+
 // We don't serve favicon.ico from root. PNG images are used instead for icons through link elements.
 app.get('/favicon.ico', (req, res) => {
   res.status(404).send('favicon.ico not found.');
